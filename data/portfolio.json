@@ -1,0 +1,112 @@
+{
+  "QYLD": {
+    "name": "글로벌엑스 나스닥100 커버드콜",
+    "holdings": [
+      {
+        "quantity": 0,
+        "purchase_price": 0.0,
+        "purchase_date": "2024-01-15",
+        "total_invested": 0.0,
+        "added_date": "2024-01-15 10:30:00"
+      },
+      {
+        "quantity": 235,
+        "purchase_price": 17.71,
+        "purchase_date": "2026-03-04",
+        "total_invested": 4161.85,
+        "added_date": "2026-03-04 12:03:37"
+      }
+    ]
+  },
+  "SCHD": {
+    "name": "슈왑 미국 배당주",
+    "holdings": [
+      {
+        "quantity": 0,
+        "purchase_price": 0.0,
+        "purchase_date": "2024-02-20",
+        "total_invested": 0.0,
+        "added_date": "2024-02-20 14:15:00"
+      },
+      {
+        "quantity": 209,
+        "purchase_price": 27.58,
+        "purchase_date": "2026-03-04",
+        "total_invested": 5764.219999999999,
+        "added_date": "2026-03-04 12:04:14"
+      }
+    ]
+  },
+  "SDTY": {
+    "name": "일드맥스 S&P500 커버드콜",
+    "holdings": [
+      {
+        "quantity": 0,
+        "purchase_price": 0.0,
+        "purchase_date": "2024-03-01",
+        "total_invested": 0.0,
+        "added_date": "2024-03-01 09:45:00"
+      },
+      {
+        "quantity": 236,
+        "purchase_price": 44.92,
+        "purchase_date": "2026-03-04",
+        "total_invested": 10601.12,
+        "added_date": "2026-03-04 12:05:01"
+      }
+    ]
+  },
+  "CASH": {
+    "name": "현금 (현재)",
+    "holdings": [
+      {
+        "quantity": 1240.95,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 1240.95,
+        "description": "현금",
+        "added_date": "2026-03-04 12:22:49"
+      },
+      {
+        "quantity": 180.20999999999998,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 180.20999999999998,
+        "description": "초기 현금",
+        "added_date": "2026-03-04 14:11:10"
+      },
+      {
+        "quantity": 180.20999999999998,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 180.20999999999998,
+        "description": "초기 현금",
+        "added_date": "2026-03-04 14:11:19"
+      },
+      {
+        "quantity": 47.98,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 47.98,
+        "description": "초기 현금",
+        "added_date": "2026-03-04 14:11:43"
+      },
+      {
+        "quantity": 19.26,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 19.26,
+        "description": "초기 현금",
+        "added_date": "2026-03-04 14:11:46"
+      },
+      {
+        "quantity": 108.54,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-04",
+        "total_invested": 108.54,
+        "description": "초기 현금",
+        "added_date": "2026-03-04 14:11:49"
+      }
+    ]
+  }
+}
