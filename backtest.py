@@ -42,20 +42,62 @@ class BacktestEngine:
         self.analyzer = ETFAnalyzer()
         self.signal_generator = TradingSignalGenerator()
         self.dividend_tracker = DividendTracker()
+
+    def _normalize_price_frame(self, df):
+        """다운로드 데이터에서 가격 컬럼만 정규화"""
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            return None
+
+        close_col = None
+        for candidate in ['Close', 'close']:
+            if candidate in df.columns:
+                close_col = candidate
+                break
+
+        if close_col is None:
+            return None
+
+        price_df = df[[close_col]].rename(columns={close_col: 'price'}).dropna()
+        return price_df if not price_df.empty else None
+
+    def _fetch_from_yfinance(self, symbol):
+        """Yahoo Finance 우선 조회"""
+        try:
+            df = yf.download(symbol, start=self.start_date, end=self.end_date, progress=False)
+            return self._normalize_price_frame(df)
+        except Exception as e:
+            print(f"⚠️ Yahoo 조회 실패 ({symbol}): {str(e)}")
+            return None
+
+    def _fetch_from_stooq(self, symbol):
+        """Stooq CSV 대체 조회"""
+        stooq_symbol = f"{symbol.lower()}.us"
+        stooq_url = f"https://stooq.com/q/d/l/?s={stooq_symbol}&i=d"
+
+        try:
+            df = pd.read_csv(stooq_url)
+            if 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'])
+                df = df[(df['Date'] >= pd.to_datetime(self.start_date)) & (df['Date'] <= pd.to_datetime(self.end_date))]
+                df = df.set_index('Date')
+            return self._normalize_price_frame(df)
+        except Exception as e:
+            print(f"⚠️ Stooq 조회 실패 ({symbol}): {str(e)}")
+            return None
         
     def get_historical_data(self, symbol, period='1d'):
-        """과거 데이터 수집"""
-        try:
-            # OHLC 데이터 다운로드
-            df = yf.download(symbol, start=self.start_date, end=self.end_date, progress=False)
-            # Close 가격만 추출
-            if isinstance(df, pd.DataFrame):
-                return df[['Close']].rename(columns={'Close': 'price'})
-            else:
-                return None
-        except Exception as e:
-            print(f"❌ {symbol} 데이터 수집 실패: {str(e)}")
-            return None
+        """과거 데이터 수집 (Yahoo 우선, 실패 시 Stooq 폴백)"""
+        yahoo_df = self._fetch_from_yfinance(symbol)
+        if yahoo_df is not None:
+            return yahoo_df
+
+        print(f"⚠️ {symbol}: Yahoo Finance 실패, Stooq 대체 경로 시도")
+        stooq_df = self._fetch_from_stooq(symbol)
+        if stooq_df is not None:
+            return stooq_df
+
+        print(f"❌ {symbol} 데이터 수집 실패 (Yahoo/Stooq 모두 실패)")
+        return None
     
     def run_backtest(self):
         """백테스트 실행"""
@@ -73,9 +115,11 @@ class BacktestEngine:
         all_data = {}
         for etf_name, symbol in ETF_LIST.items():
             data = self.get_historical_data(symbol)
-            if data is not None:
+            if data is not None and len(data) > 0:
                 all_data[symbol] = data
                 print(f"  ✓ {etf_name} ({symbol}): {len(data)} 거래일")
+            else:
+                print(f"  ✗ {etf_name} ({symbol}): 데이터 없음")
         
         if not all_data:
             print("❌ 데이터 수집 실패")

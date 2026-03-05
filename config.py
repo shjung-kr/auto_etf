@@ -35,6 +35,8 @@ PROFIT_CONFIG = {
 TRADING_CONFIG = {
     "BUY_SIGNAL_STRENGTH": 2,   # 매수 신호 강도 (2개 이상의 신호 필요)
     "SELL_SIGNAL_STRENGTH": 2,  # 매도 신호 강도
+    "MOMENTUM_3M_BUY_THRESHOLD": 2.0,   # 3개월 모멘텀이 +2% 이상일 때 매수 가중
+    "MOMENTUM_3M_SELL_THRESHOLD": -5.0, # 3개월 모멘텀이 -5% 이하일 때 매도 가중
     "TRADING_HOURS_START": "09:00",  # 거래 시작 시간
     "TRADING_HOURS_END": "16:00",    # 거래 종료 시간
 }

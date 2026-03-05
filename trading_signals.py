@@ -35,9 +35,11 @@ class TradingSignalGenerator:
         
         buy_signals = 0
         sell_signals = 0
+        total_checks = 0
         
         # 이동평균선 신호
         ma_signal = analysis_result['moving_average'].get('signal')
+        total_checks += 1
         if ma_signal == 'BUY':
             buy_signals += 1
         elif ma_signal == 'SELL':
@@ -45,6 +47,7 @@ class TradingSignalGenerator:
         
         # RSI 신호
         rsi_signal = analysis_result['rsi'].get('signal')
+        total_checks += 1
         if rsi_signal == 'BUY':
             buy_signals += 1
         elif rsi_signal == 'SELL':
@@ -52,6 +55,7 @@ class TradingSignalGenerator:
         
         # MACD 신호
         macd_signal = analysis_result['macd'].get('signal')
+        total_checks += 1
         if macd_signal == 'BUY':
             buy_signals += 1
         elif macd_signal == 'SELL':
@@ -59,18 +63,31 @@ class TradingSignalGenerator:
         
         # 수익률 기반 신호
         returns_1m = analysis_result['returns'].get('return_1m')
+        total_checks += 1
         if returns_1m is not None:
             if returns_1m < PROFIT_CONFIG['STOP_LOSS'] * 100:
                 sell_signals += 1  # 손절
             elif returns_1m > PROFIT_CONFIG['TARGET_PROFIT'] * 100:
                 sell_signals += 1  # 익절
+
+        # 중기 모멘텀 필터 (추세 역행 매수/매도 완화)
+        momentum_3m = analysis_result['returns'].get('return_3m')
+        momentum_buy_threshold = TRADING_CONFIG.get('MOMENTUM_3M_BUY_THRESHOLD', 2.0)
+        momentum_sell_threshold = TRADING_CONFIG.get('MOMENTUM_3M_SELL_THRESHOLD', -5.0)
+        total_checks += 1
+        if momentum_3m is not None:
+            if momentum_3m >= momentum_buy_threshold:
+                buy_signals += 1
+            elif momentum_3m <= momentum_sell_threshold:
+                sell_signals += 1
         
         # 최종 신호 결정
-        signal_strength_required = TRADING_CONFIG['BUY_SIGNAL_STRENGTH']
+        buy_signal_strength_required = TRADING_CONFIG['BUY_SIGNAL_STRENGTH']
+        sell_signal_strength_required = TRADING_CONFIG.get('SELL_SIGNAL_STRENGTH', buy_signal_strength_required)
         
-        if buy_signals >= signal_strength_required:
+        if buy_signals >= buy_signal_strength_required:
             final_signal = 'BUY'
-        elif sell_signals >= signal_strength_required:
+        elif sell_signals >= sell_signal_strength_required:
             final_signal = 'SELL'
         else:
             final_signal = 'HOLD'
@@ -82,7 +99,7 @@ class TradingSignalGenerator:
             'current_price': analysis_result['returns']['current_price'],
             'buy_signals': buy_signals,
             'sell_signals': sell_signals,
-            'confidence': max(buy_signals, sell_signals) / 4 * 100,  # 신뢰도
+            'confidence': max(buy_signals, sell_signals) / max(total_checks, 1) * 100,  # 신뢰도
             'analysis': analysis_result
         }
         
