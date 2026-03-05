@@ -50,3 +50,9 @@ jobs:
           else
             python final_backtest.py
           fi
+      - name: Debug workflow source
+        run: |
+          echo "REF=$GITHUB_REF"
+          echo "SHA=$GITHUB_SHA"
+          echo "WORKFLOW=$GITHUB_WORKFLOW"
+          sed -n '1,120p' .github/workflows/python-auto-etf.yml
