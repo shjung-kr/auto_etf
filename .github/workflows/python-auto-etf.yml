@@ -1,9 +1,18 @@
-name: ETF AutoTrader Daily Run
+﻿name: ETF AutoTrader Daily Run
 
 on:
   schedule:
-    - cron: '30 0 * * *'  # 매일 09:30 KST (UTC+0 00:30)
+    - cron: '30 0 * * *'  # daily 09:30 KST (00:30 UTC)
   workflow_dispatch:
+    inputs:
+      run_target:
+        description: 'Select which script to run'
+        required: true
+        default: backtest
+        type: choice
+        options:
+          - backtest
+          - main
 
 jobs:
   run-etf-bot:
@@ -30,6 +39,16 @@ jobs:
           echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> $GITHUB_ENV
           echo "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" >> $GITHUB_ENV
 
-      - name: Run ETF AutoTrader
+      - name: Run ETF AutoTrader (schedule)
+        if: github.event_name == 'schedule'
         run: |
           python main.py
+
+      - name: Run selected target (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.run_target }}" = "main" ]; then
+            python main.py
+          else
+            python final_backtest.py
+          fi
