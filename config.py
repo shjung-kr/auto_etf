@@ -56,7 +56,7 @@ NOTIFICATION_CONFIG = {
 # 스케줄 설정
 SCHEDULE_CONFIG = {
     "CHECK_INTERVAL_MINUTES": 60,      # 60분 마다 체크
-    "RUN_TIME": "09:30",               # 매일 09:30 실행
+    "RUN_TIME": "15:07",               # 매일 09:30 실행
 }
 
 # 데이터 저장 경로
