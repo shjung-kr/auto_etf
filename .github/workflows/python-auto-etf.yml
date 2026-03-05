@@ -40,13 +40,13 @@ jobs:
       - name: Run ETF AutoTrader (schedule)
         if: github.event_name == 'schedule'
         run: |
-          python main.py
+          python run_today_analysis.py
 
       - name: Run selected target (manual)
         if: github.event_name == 'workflow_dispatch'
         run: |
           if [ "${{ github.event.inputs.run_target }}" = "main" ]; then
-            python main.py
+            python run_today_analysis.py
           else
             python final_backtest.py
           fi
