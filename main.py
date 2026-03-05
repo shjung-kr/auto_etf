@@ -357,6 +357,9 @@ def main():
     # 대화형 모드 실행
     try:
         trader.interactive_mode()
+    except EOFError:
+        logger.info("Non-interactive environment detected. Running one analysis cycle.")
+        trader.run_once()
     except KeyboardInterrupt:
         print("\n\n프로그램을 종료합니다.")
         trader.stop_scheduler()
