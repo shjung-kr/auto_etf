@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from datetime import datetime
 from config import TRADING_CONFIG, PROFIT_CONFIG, ANALYSIS_CONFIG
 from dividend_tracker import DividendTracker
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class TradingSignalGenerator:
-    """거래 신호 생성 및 관리 클래스"""
+    """Trading signal generation and position management."""
     
     def __init__(self):
         self.signals = {}
@@ -15,21 +15,21 @@ class TradingSignalGenerator:
         self.trading_history = []
         self.dividend_tracker = DividendTracker()
         
-        # 손절률 설정 (배당금 미반영 기본값)
+        # ?먯젅瑜??ㅼ젙 (諛곕떦湲?誘몃컲??湲곕낯媛?
         self.base_stop_loss = PROFIT_CONFIG['STOP_LOSS']  # -0.03 (-3%)
         
-        # 배당금 정보 참조
+        # 諛곕떦湲??뺣낫 李몄“
         self.DIVIDEND_INFO = self.dividend_tracker.DIVIDEND_INFO
     
     def generate_signal(self, analysis_result):
         """
-        분석 결과를 기반으로 거래 신호 생성
+        遺꾩꽍 寃곌낵瑜?湲곕컲?쇰줈 嫄곕옒 ?좏샇 ?앹꽦
         
         Args:
-            analysis_result: ETF 분석 결과 (dict)
+            analysis_result: ETF 遺꾩꽍 寃곌낵 (dict)
         
         Returns:
-            dict: 거래 신호 (BUY, SELL, HOLD)
+            dict: 嫄곕옒 ?좏샇 (BUY, SELL, HOLD)
         """
         symbol = analysis_result['symbol']
         
@@ -37,7 +37,7 @@ class TradingSignalGenerator:
         sell_signals = 0
         total_checks = 0
         
-        # 이동평균선 신호
+        # ?대룞?됯퇏???좏샇
         ma_signal = analysis_result['moving_average'].get('signal')
         total_checks += 1
         if ma_signal == 'BUY':
@@ -45,7 +45,7 @@ class TradingSignalGenerator:
         elif ma_signal == 'SELL':
             sell_signals += 1
         
-        # RSI 신호
+        # RSI ?좏샇
         rsi_signal = analysis_result['rsi'].get('signal')
         total_checks += 1
         if rsi_signal == 'BUY':
@@ -53,7 +53,7 @@ class TradingSignalGenerator:
         elif rsi_signal == 'SELL':
             sell_signals += 1
         
-        # MACD 신호
+        # MACD ?좏샇
         macd_signal = analysis_result['macd'].get('signal')
         total_checks += 1
         if macd_signal == 'BUY':
@@ -61,16 +61,16 @@ class TradingSignalGenerator:
         elif macd_signal == 'SELL':
             sell_signals += 1
         
-        # 수익률 기반 신호
+        # ?섏씡瑜?湲곕컲 ?좏샇
         returns_1m = analysis_result['returns'].get('return_1m')
         total_checks += 1
         if returns_1m is not None:
             if returns_1m < PROFIT_CONFIG['STOP_LOSS'] * 100:
-                sell_signals += 1  # 손절
+                sell_signals += 1  # ?먯젅
             elif returns_1m > PROFIT_CONFIG['TARGET_PROFIT'] * 100:
-                sell_signals += 1  # 익절
+                sell_signals += 1  # ?듭젅
 
-        # 중기 모멘텀 필터 (추세 역행 매수/매도 완화)
+        # 以묎린 紐⑤찘? ?꾪꽣 (異붿꽭 ??뻾 留ㅼ닔/留ㅻ룄 ?꾪솕)
         momentum_3m = analysis_result['returns'].get('return_3m')
         momentum_buy_threshold = TRADING_CONFIG.get('MOMENTUM_3M_BUY_THRESHOLD', 2.0)
         momentum_sell_threshold = TRADING_CONFIG.get('MOMENTUM_3M_SELL_THRESHOLD', -5.0)
@@ -81,7 +81,7 @@ class TradingSignalGenerator:
             elif momentum_3m <= momentum_sell_threshold:
                 sell_signals += 1
         
-        # 최종 신호 결정
+        # 理쒖쥌 ?좏샇 寃곗젙
         buy_signal_strength_required = TRADING_CONFIG['BUY_SIGNAL_STRENGTH']
         sell_signal_strength_required = TRADING_CONFIG.get('SELL_SIGNAL_STRENGTH', buy_signal_strength_required)
         
@@ -99,26 +99,26 @@ class TradingSignalGenerator:
             'current_price': analysis_result['returns']['current_price'],
             'buy_signals': buy_signals,
             'sell_signals': sell_signals,
-            'confidence': max(buy_signals, sell_signals) / max(total_checks, 1) * 100,  # 신뢰도
+            'confidence': max(buy_signals, sell_signals) / max(total_checks, 1) * 100,  # ?좊ː??
             'analysis': analysis_result
         }
         
         self.signals[symbol] = signal_data
-        logger.info(f"[{symbol}] 신호: {final_signal} (신뢰도: {signal_data['confidence']:.0f}%)")
+        logger.info(f"[{symbol}] ?좏샇: {final_signal} (?좊ː?? {signal_data['confidence']:.0f}%)")
         
         return signal_data
     
     def check_profit_target(self, symbol, entry_price, current_price):
         """
-        수익 목표 확인
+        ?섏씡 紐⑺몴 ?뺤씤
         
         Args:
-            symbol: ETF 기호
-            entry_price: 매입 가격
-            current_price: 현재 가격
+            symbol: ETF 湲고샇
+            entry_price: 留ㅼ엯 媛寃?
+            current_price: ?꾩옱 媛寃?
         
         Returns:
-            dict: 목표 달성 여부 및 수익률
+            dict: 紐⑺몴 ?ъ꽦 ?щ? 諛??섏씡瑜?
         """
         returns = (current_price - entry_price) / entry_price * 100
         
@@ -135,13 +135,13 @@ class TradingSignalGenerator:
     
     def add_position(self, symbol, entry_price, quantity, notes=""):
         """
-        포지션 추가
+        ?ъ???異붽?
         
         Args:
-            symbol: ETF 기호
-            entry_price: 매입 가격
-            quantity: 수량
-            notes: 비고
+            symbol: ETF 湲고샇
+            entry_price: 留ㅼ엯 媛寃?
+            quantity: ?섎웾
+            notes: 鍮꾧퀬
         """
         position = {
             'symbol': symbol,
@@ -155,19 +155,19 @@ class TradingSignalGenerator:
             self.portfolio[symbol] = []
         
         self.portfolio[symbol].append(position)
-        logger.info(f"포지션 추가: {symbol} {quantity}주 @ {entry_price} (합계: {quantity * entry_price})")
+        logger.info(f"?ъ???異붽?: {symbol} {quantity}二?@ {entry_price} (?⑷퀎: {quantity * entry_price})")
     
     def close_position(self, symbol, exit_price, quantity=None):
         """
-        포지션 종료
+        ?ъ???醫낅즺
         
         Args:
-            symbol: ETF 기호
-            exit_price: 청산 가격
-            quantity: 수량 (None이면 전체)
+            symbol: ETF 湲고샇
+            exit_price: 泥?궛 媛寃?
+            quantity: ?섎웾 (None?대㈃ ?꾩껜)
         """
         if symbol not in self.portfolio or not self.portfolio[symbol]:
-            logger.warning(f"{symbol}에 대한 열린 포지션이 없습니다.")
+            logger.warning(f"{symbol}??????대┛ ?ъ??섏씠 ?놁뒿?덈떎.")
             return None
         
         positions = self.portfolio[symbol]
@@ -198,20 +198,20 @@ class TradingSignalGenerator:
             closed_positions.append(trade_record)
             remaining -= close_qty
             
-            logger.info(f"포지션 종료: {symbol} {close_qty}주 @ {exit_price} (수익: {trade_record['returns_pct']}%)")
+            logger.info(f"?ъ???醫낅즺: {symbol} {close_qty}二?@ {exit_price} (?섏씡: {trade_record['returns_pct']}%)")
         
         return closed_positions
     
     def get_position_status(self, symbol, current_price):
         """
-        포지션 상태 조회
+        ?ъ????곹깭 議고쉶
         
         Args:
-            symbol: ETF 기호
-            current_price: 현재 가격
+            symbol: ETF 湲고샇
+            current_price: ?꾩옱 媛寃?
         
         Returns:
-            dict: 포지션 상태 및 수익률
+            dict: ?ъ????곹깭 諛??섏씡瑜?
         """
         if symbol not in self.portfolio or not self.portfolio[symbol]:
             return None
@@ -235,23 +235,23 @@ class TradingSignalGenerator:
         return status
     
     def get_all_signals(self):
-        """모든 신호 반환"""
+        """紐⑤뱺 ?좏샇 諛섑솚"""
         return self.signals
     
     def get_portfolio(self):
-        """포트폴리오 조회"""
+        """?ы듃?대━??議고쉶"""
         return self.portfolio
     
     def get_trading_history(self):
-        """거래 이력 반환"""
+        """嫄곕옒 ?대젰 諛섑솚"""
         return self.trading_history
     
     def calculate_portfolio_returns(self):
         """
-        포트폴리오 총 수익률 계산
+        ?ы듃?대━??珥??섏씡瑜?怨꾩궛
         
         Returns:
-            dict: 포트폴리오 성과 지표
+            dict: ?ы듃?대━???깃낵 吏??
         """
         if not self.trading_history:
             return {'total_trades': 0, 'total_profit': 0, 'win_rate': 0}
@@ -273,18 +273,18 @@ class TradingSignalGenerator:
     def calculate_trade_suggestion(self, signal_data, portfolio_summary, current_price):
         """
         매수/매도 수량 추천 계산
-        
+
         Args:
             signal_data: 거래 신호 데이터
             portfolio_summary: 포트폴리오 요약 정보
             current_price: 현재 가격
-        
+
         Returns:
             dict: 매수/매도 추천 정보
         """
         symbol = signal_data['symbol']
         signal = signal_data['signal']
-        
+
         suggestion = {
             'symbol': symbol,
             'signal': signal,
@@ -293,92 +293,120 @@ class TradingSignalGenerator:
             'total_investment': 0,
             'description': ''
         }
-        
-        # 포트폴리오에서 해당 자산의 정보 찾기
+
+        # 포트폴리오에서 해당 자산 보유 정보 찾기
         current_holding = None
         for asset in portfolio_summary['assets']:
             if asset['symbol'] == symbol:
                 current_holding = asset
                 break
-        
+
         if signal == 'BUY':
             # ===== 매수 추천 =====
             available_cash = portfolio_summary['total_cash']
-            
-            # 현금의 30%를 각 매수에 사용 (자금 관리)
+
+            # 현금의 30%를 기본 투자 한도로 사용
             max_investment = available_cash * 0.30
-            
+
             if available_cash > current_price:
-                # 매수 가능한 최대 수량
                 max_quantity = int(available_cash / current_price)
-                
-                # 신뢰도 기반 수량 결정
+
+                # 1) 신뢰도 계수
                 confidence = signal_data['confidence']
-                
                 if confidence >= 75:
-                    quantity = int(max_investment / current_price)
+                    confidence_ratio = 1.0
                 elif confidence >= 50:
-                    quantity = int(max_investment / current_price * 0.7)
+                    confidence_ratio = 0.7
                 else:
-                    quantity = int(max_investment / current_price * 0.5)
-                
-                # 최소 1주부터 최대 max_quantity까지
+                    confidence_ratio = 0.5
+
+                # 2) ETF별 모멘텀 계수 (3개월 수익률)
+                momentum_3m = signal_data.get('analysis', {}).get('returns', {}).get('return_3m')
+                momentum_ratio = 1.0
+                if momentum_3m is not None:
+                    # +10% 모멘텀 -> +20%, -10% -> -20% (0.6~1.4 제한)
+                    momentum_ratio = max(0.6, min(1.4, 1.0 + (momentum_3m / 50.0)))
+
+                # 3) 보유 비중 계수 (이미 많이 보유한 ETF는 추가 매수 축소)
+                concentration_ratio = 1.0
+                total_invested = portfolio_summary.get('total_invested', 0)
+                if current_holding and total_invested > 0:
+                    holding_weight = current_holding['total_invested'] / total_invested
+                    concentration_ratio = max(0.5, 1.0 - max(0.0, holding_weight - 0.30))
+
+                suggested_investment = max_investment * confidence_ratio * momentum_ratio * concentration_ratio
+                quantity = int(suggested_investment / current_price)
+
                 quantity = max(1, min(quantity, max_quantity))
                 total_investment = quantity * current_price
-                
+
                 suggestion['quantity'] = quantity
                 suggestion['total_investment'] = round(total_investment, 2)
-                suggestion['description'] = f"현금 ${available_cash:,.0f}에서 {quantity}주 매수 추천 (투자액: ${total_investment:,.0f})"
+                suggestion['description'] = (
+                    f"현금 ${available_cash:,.0f}에서 {quantity}주 매수 추천 "
+                    f"(투자액: ${total_investment:,.0f}, "
+                    f"신뢰도계수 {confidence_ratio:.2f}, 모멘텀계수 {momentum_ratio:.2f}, 비중계수 {concentration_ratio:.2f})"
+                )
             else:
-                suggestion['description'] = f"현금 부족 (필요: ${current_price:,.0f}, 보유: ${available_cash:,.0f})"
-        
+                suggestion['description'] = f"현금 부족(필요: ${current_price:,.0f}, 보유: ${available_cash:,.0f})"
+
         elif signal == 'SELL':
             # ===== 매도 추천 =====
             if current_holding and current_holding['total_quantity'] > 0:
                 total_quantity = current_holding['total_quantity']
                 avg_price = current_holding['total_invested'] / total_quantity
                 current_returns = ((current_price - avg_price) / avg_price) * 100
-                
-                # 목표 수익률 및 손절률 (동적 손절률 사용)
+
                 target_profit = PROFIT_CONFIG['TARGET_PROFIT'] * 100
-                
-                # 동적 손절률이 있으면 사용, 없으면 기본값 사용
+
                 if 'dynamic_stop_loss' in signal_data and signal_data['dynamic_stop_loss'] is not None:
                     stop_loss = signal_data['dynamic_stop_loss'] * 100
                     is_dynamic = True
                 else:
                     stop_loss = PROFIT_CONFIG['STOP_LOSS'] * 100
                     is_dynamic = False
-                
-                # 수익률 상황에 따른 매도량 결정
+
+                # 고정 비율 대신 수익률 크기에 따라 매도 비율 동적 조정
                 if current_returns >= target_profit:
-                    # 익절: 전체의 50% 매도
-                    quantity = int(total_quantity * 0.5)
-                    suggestion['description'] = f"익절 신호 - {quantity}주 매도 추천 (수익률: {current_returns:.1f}%)"
+                    exceed = current_returns - target_profit
+                    sell_ratio = min(1.0, 0.5 + max(0.0, exceed) / 30.0)
+                    quantity = max(1, int(total_quantity * sell_ratio))
+                    suggestion['description'] = (
+                        f"익절 신호 - {quantity}주 매도 추천 "
+                        f"(수익률: {current_returns:.1f}%, 매도비율: {sell_ratio*100:.0f}%)"
+                    )
                 elif current_returns <= stop_loss:
-                    # 손절: 전체 매도
                     quantity = total_quantity
                     sl_str = f"{stop_loss:.2f}%" + (" (배당금 반영)" if is_dynamic else "")
-                    suggestion['description'] = f"손절 신호 - {quantity}주 전량 매도 추천 (수익률: {current_returns:.1f}%, 손절률: {sl_str})"
+                    suggestion['description'] = (
+                        f"손절 신호 - {quantity}주 전량 매도 추천 "
+                        f"(수익률: {current_returns:.1f}%, 손절률: {sl_str})"
+                    )
                 else:
-                    # 부분 매도: 수익률에 따라 조정
                     if current_returns > 0:
-                        quantity = int(total_quantity * 0.3)
-                        suggestion['description'] = f"수익 실현 - {quantity}주 매도 추천 (수익률: {current_returns:.1f}%)"
+                        sell_ratio = min(0.6, 0.2 + current_returns / 25.0)
+                        quantity = max(1, int(total_quantity * sell_ratio))
+                        suggestion['description'] = (
+                            f"수익 실현 - {quantity}주 매도 추천 "
+                            f"(수익률: {current_returns:.1f}%, 매도비율: {sell_ratio*100:.0f}%)"
+                        )
                     else:
                         quantity = 0
                         sl_str = f"{stop_loss:.2f}%" + (" (배당금 반영)" if is_dynamic else "")
-                        suggestion['description'] = f"하락 신호이나 손절 수준 미만 - 매도 보류 (수익률: {current_returns:.1f}%, 손절률: {sl_str})"
-                
+                        suggestion['description'] = (
+                            f"손실 신호이나 손절 미만 - 매도 보류 "
+                            f"(수익률: {current_returns:.1f}%, 손절률: {sl_str})"
+                        )
+
                 quantity = max(0, min(quantity, total_quantity))
                 total_proceeds = quantity * current_price
-                
+
                 suggestion['quantity'] = quantity
                 suggestion['total_investment'] = round(total_proceeds, 2)
                 suggestion['current_returns'] = round(current_returns, 2)
             else:
-                suggestion['description'] = f"보유 자산 없음 - 매도 불가"
-        
+                suggestion['description'] = "보유 자산 없음 - 매도 불가"
+
         else:  # HOLD
             if current_holding and current_holding['total_quantity'] > 0:
                 total_quantity = current_holding['total_quantity']
@@ -387,54 +415,55 @@ class TradingSignalGenerator:
                 suggestion['description'] = f"보유 신호 - ({total_quantity}주 보유, 수익률: {current_returns:.1f}%)"
                 suggestion['current_returns'] = round(current_returns, 2)
             else:
-                suggestion['description'] = f"신호 없음"
-        
-        return suggestion    
+                suggestion['description'] = "신호 없음"
+
+        return suggestion
+
     def calculate_dynamic_stop_loss(self, symbol, current_holding):
         """
-        배당금을 고려한 동적 손절률 계산
+        諛곕떦湲덉쓣 怨좊젮???숈쟻 ?먯젅瑜?怨꾩궛
         
-        높은 배당수익률을 가진 ETF는 손실을 더 오래 버틸 수 있음
+        ?믪? 諛곕떦?섏씡瑜좎쓣 媛吏?ETF???먯떎?????ㅻ옒 踰꾪떥 ???덉쓬
         
         Args:
-            symbol: ETF 심볼
-            current_holding: 현재 보유 정보 (dict)
+            symbol: ETF ?щ낵
+            current_holding: ?꾩옱 蹂댁쑀 ?뺣낫 (dict)
         
         Returns:
-            float: 동적 손절률 (예: -0.05 = -5%)
+            float: ?숈쟻 ?먯젅瑜?(?? -0.05 = -5%)
         """
         if not current_holding or current_holding['total_quantity'] == 0:
             return self.base_stop_loss
         
-        # 배당금 정보 가져오기
+        # 諛곕떦湲??뺣낫 媛?몄삤湲?
         dividend_info = self.DIVIDEND_INFO.get(symbol)
         
         if dividend_info:
-            yield_percent = dividend_info.get('yield_percent', 0) / 100  # 연 배당수익률
+            yield_percent = dividend_info.get('yield_percent', 0) / 100  # ??諛곕떦?섏씡瑜?
             
-            # 배당금 고려 기간 설정 (3-6개월 버틸 수 있도록)
-            # 배당수익률에 따라 조정
-            if yield_percent >= 0.12:  # 12% 이상 (QYLD, SDTY)
-                hold_months = 4  # 4개월 버틸 수 있도록
+            # 諛곕떦湲?怨좊젮 湲곌컙 ?ㅼ젙 (3-6媛쒖썡 踰꾪떥 ???덈룄濡?
+            # 諛곕떦?섏씡瑜좎뿉 ?곕씪 議곗젙
+            if yield_percent >= 0.12:  # 12% ?댁긽 (QYLD, SDTY)
+                hold_months = 4  # 4媛쒖썡 踰꾪떥 ???덈룄濡?
             elif yield_percent >= 0.03:  # 3-12% (SCHD)
-                hold_months = 5  # 5개월 버틸 수 있도록
+                hold_months = 5  # 5媛쒖썡 踰꾪떥 ???덈룄濡?
             else:
-                hold_months = 6  # 6개월 기본값
+                hold_months = 6  # 6媛쒖썡 湲곕낯媛?
             
-            # 해당 기간 동안의 배당금으로 손절률 상쇄
+            # ?대떦 湲곌컙 ?숈븞??諛곕떦湲덉쑝濡??먯젅瑜??곸뇙
             dividend_offset = yield_percent * (hold_months / 12)
             
-            # 안전마진 80% 적용 (배당금의 80%만 손절률에 반영)
+            # ?덉쟾留덉쭊 80% ?곸슜 (諛곕떦湲덉쓽 80%留??먯젅瑜좎뿉 諛섏쁺)
             safety_margin = 0.80
             dynamic_stop_loss = self.base_stop_loss - (dividend_offset * safety_margin)
             
             logger.debug(
-                f"[{symbol}] 동적 손절률 계산:\n"
-                f"  - 연 배당수익률: {yield_percent*100:.2f}%\n"
-                f"  - 버틸 기간: {hold_months}개월\n"
-                f"  - 배당금 오프셋: {dividend_offset*100:.2f}%\n"
-                f"  - 기본 손절률: {self.base_stop_loss*100:.2f}%\n"
-                f"  - 동적 손절률: {dynamic_stop_loss*100:.2f}%"
+                f"[{symbol}] ?숈쟻 ?먯젅瑜?怨꾩궛:\n"
+                f"  - ??諛곕떦?섏씡瑜? {yield_percent*100:.2f}%\n"
+                f"  - 踰꾪떥 湲곌컙: {hold_months}媛쒖썡\n"
+                f"  - 諛곕떦湲??ㅽ봽?? {dividend_offset*100:.2f}%\n"
+                f"  - 湲곕낯 ?먯젅瑜? {self.base_stop_loss*100:.2f}%\n"
+                f"  - ?숈쟻 ?먯젅瑜? {dynamic_stop_loss*100:.2f}%"
             )
             
             return round(dynamic_stop_loss, 4)
@@ -443,14 +472,14 @@ class TradingSignalGenerator:
     
     def get_dynamic_stop_loss_for_portfolio(self, portfolio_summary, analysis_results):
         """
-        포트폴리오 각 자산별 동적 손절률 조회
+        ?ы듃?대━??媛??먯궛蹂??숈쟻 ?먯젅瑜?議고쉶
         
         Args:
-            portfolio_summary: 포트폴리오 요약
-            analysis_results: 분석 결과
+            portfolio_summary: ?ы듃?대━???붿빟
+            analysis_results: 遺꾩꽍 寃곌낵
         
         Returns:
-            dict: 심볼별 동적 손절률
+            dict: ?щ낵蹂??숈쟻 ?먯젅瑜?
         """
         stop_losses = {}
         
@@ -459,3 +488,4 @@ class TradingSignalGenerator:
             stop_losses[symbol] = self.calculate_dynamic_stop_loss(symbol, asset)
         
         return stop_losses
+
