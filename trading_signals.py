@@ -306,10 +306,16 @@ class TradingSignalGenerator:
             available_cash = portfolio_summary['total_cash']
 
             # 현금의 30%를 기본 투자 한도로 사용
-            max_investment = available_cash * 0.30
+            reserve_ratio = TRADING_CONFIG.get("CASH_RESERVE_RATIO", 0.12)
+            total_value = portfolio_summary.get("total_value", portfolio_summary.get("total_invested", 0) + available_cash)
+            reserve_cash = max(0.0, total_value * reserve_ratio)
+            investable_cash = max(0.0, available_cash - reserve_cash)
 
-            if available_cash > current_price:
-                max_quantity = int(available_cash / current_price)
+            # Invest at most 30% of investable cash per signal
+            max_investment = investable_cash * 0.30
+
+            if investable_cash > current_price:
+                max_quantity = int(investable_cash / current_price)
 
                 # 1) 신뢰도 계수
                 confidence = signal_data['confidence']
@@ -343,12 +349,19 @@ class TradingSignalGenerator:
                 suggestion['quantity'] = quantity
                 suggestion['total_investment'] = round(total_investment, 2)
                 suggestion['description'] = (
-                    f"현금 ${available_cash:,.0f}에서 {quantity}주 매수 추천 "
+                    f"현금 ${available_cash:,.0f} (예비현금 ${reserve_cash:,.0f} 유지)에서 {quantity}주 매수 추천 "
                     f"(투자액: ${total_investment:,.0f}, "
                     f"신뢰도계수 {confidence_ratio:.2f}, 모멘텀계수 {momentum_ratio:.2f}, 비중계수 {concentration_ratio:.2f})"
                 )
             else:
-                suggestion['description'] = f"현금 부족(필요: ${current_price:,.0f}, 보유: ${available_cash:,.0f})"
+                shortage = max(0.0, current_price - investable_cash)
+                suggestion['description'] = (
+                    f"현금 부족(필요: ${current_price:,.0f}, "
+                    f"주문가능현금: ${investable_cash:,.0f}, "
+                    f"부족금액: ${shortage:,.0f}, "
+                    f"총현금: ${available_cash:,.0f}, "
+                    f"예비현금: ${reserve_cash:,.0f})"
+                )
 
         elif signal == 'SELL':
             # ===== 매도 추천 =====
@@ -488,4 +501,6 @@ class TradingSignalGenerator:
             stop_losses[symbol] = self.calculate_dynamic_stop_loss(symbol, asset)
         
         return stop_losses
+
+
 

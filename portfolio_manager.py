@@ -138,6 +138,54 @@ class PortfolioManager:
         
         self.save_portfolio()
         return True
+
+    def sell_asset_quantity(self, symbol, quantity):
+        """
+        보유 자산을 수량 기준으로 매도 처리(FIFO).
+
+        Args:
+            symbol: ETF 심볼
+            quantity: 매도 수량
+
+        Returns:
+            float: 실제 매도된 수량
+        """
+        if symbol not in self.portfolio or quantity <= 0:
+            return 0
+
+        holdings = self.portfolio[symbol]["holdings"]
+        remaining = quantity
+        sold_qty = 0
+
+        for holding in holdings:
+            if remaining <= 0:
+                break
+
+            holding_qty = holding.get("quantity", 0)
+            if holding_qty <= 0:
+                continue
+
+            sell_qty = min(holding_qty, remaining)
+            purchase_price = holding.get("purchase_price", 0)
+            new_qty = holding_qty - sell_qty
+
+            holding["quantity"] = new_qty
+            holding["total_invested"] = new_qty * purchase_price
+
+            sold_qty += sell_qty
+            remaining -= sell_qty
+
+        # 0주가 된 보유내역 정리
+        self.portfolio[symbol]["holdings"] = [
+            h for h in self.portfolio[symbol]["holdings"] if h.get("quantity", 0) > 0
+        ]
+
+        if not self.portfolio[symbol]["holdings"]:
+            del self.portfolio[symbol]
+
+        self.save_portfolio()
+        logger.info(f"자산 매도 처리: {symbol} {sold_qty}주")
+        return sold_qty
     
     def add_cash(self, amount, description="초기 현금"):
         """
