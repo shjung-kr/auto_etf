@@ -22,37 +22,11 @@
     "name": "슈왑 미국 배당주",
     "holdings": [
       {
-        "quantity": 0,
-        "purchase_price": 0.0,
-        "purchase_date": "2024-02-20",
-        "total_invested": 0.0,
-        "added_date": "2024-02-20 14:15:00"
-      },
-      {
-        "quantity": 209,
+        "quantity": 34,
         "purchase_price": 27.58,
         "purchase_date": "2026-03-04",
-        "total_invested": 5764.219999999999,
+        "total_invested": 937.7199999999999,
         "added_date": "2026-03-04 12:04:14"
-      }
-    ]
-  },
-  "SDTY": {
-    "name": "일드맥스 S&P500 커버드콜",
-    "holdings": [
-      {
-        "quantity": 0,
-        "purchase_price": 0.0,
-        "purchase_date": "2024-03-01",
-        "total_invested": 0.0,
-        "added_date": "2024-03-01 09:45:00"
-      },
-      {
-        "quantity": 236,
-        "purchase_price": 44.92,
-        "purchase_date": "2026-03-04",
-        "total_invested": 10601.12,
-        "added_date": "2026-03-04 12:05:01"
       }
     ]
   },
@@ -106,6 +80,30 @@
         "total_invested": 108.54,
         "description": "초기 현금",
         "added_date": "2026-03-04 14:11:49"
+      },
+      {
+        "quantity": 3809.999942779541,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-31",
+        "total_invested": 3809.999942779541,
+        "description": "SCHD sell 125 shares",
+        "added_date": "2026-03-31 20:02:37"
+      },
+      {
+        "quantity": 9233.028259277344,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-31",
+        "total_invested": 9233.028259277344,
+        "description": "SDTY sell 236 shares",
+        "added_date": "2026-03-31 20:02:38"
+      },
+      {
+        "quantity": 1523.9999771118164,
+        "purchase_price": 1.0,
+        "purchase_date": "2026-03-31",
+        "total_invested": 1523.9999771118164,
+        "description": "SCHD sell 50 shares",
+        "added_date": "2026-03-31 20:05:01"
       }
     ]
   }
