@@ -1,6 +1,12 @@
 ﻿import logging
 from datetime import datetime
-from config import TRADING_CONFIG, PROFIT_CONFIG, ANALYSIS_CONFIG
+from config import (
+    ANALYSIS_CONFIG,
+    DEFAULT_PROFIT_RULE,
+    ETF_PROFIT_RULES,
+    PROFIT_CONFIG,
+    TRADING_CONFIG,
+)
 from dividend_tracker import DividendTracker
 
 logger = logging.getLogger(__name__)
@@ -20,6 +26,183 @@ class TradingSignalGenerator:
         
         # 諛곕떦湲??뺣낫 李몄“
         self.DIVIDEND_INFO = self.dividend_tracker.DIVIDEND_INFO
+
+    def get_profit_rule(self, symbol):
+        """종목별 수익 실현 규칙 반환"""
+        rule = DEFAULT_PROFIT_RULE.copy()
+        symbol_rule = ETF_PROFIT_RULES.get(symbol, {})
+        rule.update(symbol_rule)
+        return rule
+
+    def get_received_dividends_since(self, symbol, since_date):
+        """현재 보유 기간 동안 실제 적립된 배당금을 합산"""
+        if not since_date:
+            return 0.0
+
+        dividend_entry = self.dividend_tracker.dividends.get(symbol, {})
+        payments = dividend_entry.get("payments", [])
+        total_dividends = 0.0
+
+        for payment in payments:
+            payment_date = payment.get("payment_date")
+            if not payment_date:
+                continue
+
+            try:
+                paid_at = datetime.strptime(payment_date, "%Y-%m-%d")
+            except ValueError:
+                continue
+
+            if paid_at >= since_date:
+                total_dividends += float(payment.get("amount", 0.0))
+
+        return round(total_dividends, 2)
+
+    def calculate_position_metrics(self, symbol, current_holding, current_price):
+        """현재 보유 포지션의 가격/배당 포함 수익률 계산"""
+        if not current_holding or current_holding.get('total_quantity', 0) <= 0:
+            return None
+
+        total_quantity = current_holding['total_quantity']
+        total_invested = current_holding['total_invested']
+        avg_price = total_invested / total_quantity if total_quantity > 0 else 0
+
+        if avg_price <= 0:
+            return None
+
+        holding_dates = []
+        for holding in current_holding.get("holdings", []):
+            purchase_date = holding.get("purchase_date")
+            if not purchase_date:
+                continue
+            try:
+                holding_dates.append(datetime.strptime(purchase_date, "%Y-%m-%d"))
+            except ValueError:
+                continue
+
+        first_purchase_date = min(holding_dates) if holding_dates else None
+        hold_days = (datetime.now() - first_purchase_date).days if first_purchase_date else 0
+
+        current_value = total_quantity * current_price
+        price_profit = current_value - total_invested
+        price_return_pct = (price_profit / total_invested) * 100
+
+        realized_dividends = self.get_received_dividends_since(symbol, first_purchase_date)
+        dividend_return_pct = (realized_dividends / total_invested) * 100 if total_invested > 0 else 0
+        total_return_pct = ((price_profit + realized_dividends) / total_invested) * 100 if total_invested > 0 else 0
+
+        return {
+            'symbol': symbol,
+            'total_quantity': total_quantity,
+            'avg_price': avg_price,
+            'total_invested': total_invested,
+            'current_value': current_value,
+            'price_profit': round(price_profit, 2),
+            'price_return_pct': round(price_return_pct, 2),
+            'realized_dividends': round(realized_dividends, 2),
+            'dividend_return_pct': round(dividend_return_pct, 2),
+            'total_return_pct': round(total_return_pct, 2),
+            'hold_days': hold_days,
+        }
+
+    def evaluate_exit_strategy(
+        self,
+        symbol,
+        current_holding,
+        current_price,
+        signal,
+        dynamic_stop_loss=None,
+        completed_take_profit_levels=None,
+    ):
+        """종목별 목표수익률과 배당 반영 수익률로 청산 전략 평가"""
+        metrics = self.calculate_position_metrics(symbol, current_holding, current_price)
+        if not metrics:
+            return None
+
+        rule = self.get_profit_rule(symbol)
+        effective_stop_loss = dynamic_stop_loss if dynamic_stop_loss is not None else rule['stop_loss']
+        min_hold_days = rule.get('min_hold_days', PROFIT_CONFIG['MIN_HOLD_DAYS'])
+        total_quantity = metrics['total_quantity']
+        completed_levels = set(completed_take_profit_levels or [])
+
+        if metrics['total_return_pct'] <= effective_stop_loss * 100:
+            return {
+                'action': 'FULL_SELL',
+                'quantity': total_quantity,
+                'reason': 'stop_loss',
+                'rule': rule,
+                'metrics': metrics,
+                'description': (
+                    f"손절 기준 도달 - {total_quantity}주 전량 매도 "
+                    f"(총수익률 {metrics['total_return_pct']:.2f}%, 손절 {effective_stop_loss*100:.2f}%)"
+                ),
+            }
+
+        if metrics['hold_days'] < min_hold_days:
+            return {
+                'action': 'HOLD',
+                'quantity': 0,
+                'reason': 'min_hold_days',
+                'rule': rule,
+                'metrics': metrics,
+                'description': (
+                    f"최소 보유기간 미충족 - 보유 유지 "
+                    f"({metrics['hold_days']}일 / 최소 {min_hold_days}일)"
+                ),
+            }
+
+        partial_rules = sorted(
+            rule.get('partial_take_profits', []),
+            key=lambda item: item.get('profit', 0),
+            reverse=True,
+        )
+        for partial_rule in partial_rules:
+            threshold_pct = partial_rule.get('profit', 0) * 100
+            level_id = f"{partial_rule.get('profit', 0):.4f}:{partial_rule.get('sell_ratio', 0):.4f}"
+            if level_id in completed_levels:
+                continue
+            if metrics['total_return_pct'] >= threshold_pct:
+                quantity = max(1, int(total_quantity * partial_rule.get('sell_ratio', 0)))
+                quantity = min(quantity, total_quantity)
+                return {
+                    'action': 'PARTIAL_SELL',
+                    'quantity': quantity,
+                    'level_id': level_id,
+                    'reason': 'partial_take_profit',
+                    'rule': rule,
+                    'metrics': metrics,
+                    'description': (
+                        f"부분 익절 - {quantity}주 매도 "
+                        f"(총수익률 {metrics['total_return_pct']:.2f}%, 목표 {threshold_pct:.2f}%)"
+                    ),
+                }
+
+        if signal == 'SELL' and metrics['total_return_pct'] >= rule['target_profit'] * 100:
+            return {
+                'action': 'FULL_SELL',
+                'quantity': total_quantity,
+                'reason': 'target_profit_and_sell_signal',
+                'rule': rule,
+                'metrics': metrics,
+                'description': (
+                    f"목표수익률 달성 + 매도 신호 - {total_quantity}주 전량 매도 "
+                    f"(총수익률 {metrics['total_return_pct']:.2f}%, 목표 {rule['target_profit']*100:.2f}%)"
+                ),
+            }
+
+        return {
+            'action': 'HOLD',
+            'quantity': 0,
+            'reason': 'no_exit',
+            'rule': rule,
+            'metrics': metrics,
+            'description': (
+                f"청산 조건 미충족 - 보유 유지 "
+                f"(가격수익률 {metrics['price_return_pct']:.2f}%, "
+                f"배당수익률 {metrics['dividend_return_pct']:.2f}%, "
+                f"총수익률 {metrics['total_return_pct']:.2f}%)"
+            ),
+        }
     
     def generate_signal(self, analysis_result):
         """
@@ -270,7 +453,7 @@ class TradingSignalGenerator:
             'avg_profit_per_trade': round(total_profit / total_trades, 2) if total_trades > 0 else 0,
         }
     
-    def calculate_trade_suggestion(self, signal_data, portfolio_summary, current_price):
+    def calculate_trade_suggestion(self, signal_data, portfolio_summary, current_price, exit_strategy=None):
         """
         매수/매도 수량 추천 계산
 
@@ -284,10 +467,14 @@ class TradingSignalGenerator:
         """
         symbol = signal_data['symbol']
         signal = signal_data['signal']
+        effective_signal = signal
+
+        if current_price is not None and exit_strategy and exit_strategy.get('action') in {'PARTIAL_SELL', 'FULL_SELL'}:
+            effective_signal = 'SELL'
 
         suggestion = {
             'symbol': symbol,
-            'signal': signal,
+            'signal': effective_signal,
             'current_price': current_price,
             'quantity': 0,
             'total_investment': 0,
@@ -301,7 +488,7 @@ class TradingSignalGenerator:
                 current_holding = asset
                 break
 
-        if signal == 'BUY':
+        if effective_signal == 'BUY':
             # ===== 매수 추천 =====
             available_cash = portfolio_summary['total_cash']
 
@@ -363,31 +550,27 @@ class TradingSignalGenerator:
                     f"예비현금: ${reserve_cash:,.0f})"
                 )
 
-        elif signal == 'SELL':
+        elif effective_signal == 'SELL':
             # ===== 매도 추천 =====
             if current_holding and current_holding['total_quantity'] > 0:
                 total_quantity = current_holding['total_quantity']
-                avg_price = current_holding['total_invested'] / total_quantity
-                current_returns = ((current_price - avg_price) / avg_price) * 100
-
-                target_profit = PROFIT_CONFIG['TARGET_PROFIT'] * 100
+                position_metrics = self.calculate_position_metrics(symbol, current_holding, current_price)
+                current_returns = position_metrics['price_return_pct'] if position_metrics else 0.0
 
                 if 'dynamic_stop_loss' in signal_data and signal_data['dynamic_stop_loss'] is not None:
                     stop_loss = signal_data['dynamic_stop_loss'] * 100
                     is_dynamic = True
                 else:
-                    stop_loss = PROFIT_CONFIG['STOP_LOSS'] * 100
+                    stop_loss = self.get_profit_rule(symbol)['stop_loss'] * 100
                     is_dynamic = False
 
-                # 고정 비율 대신 수익률 크기에 따라 매도 비율 동적 조정
-                if current_returns >= target_profit:
-                    exceed = current_returns - target_profit
-                    sell_ratio = min(1.0, 0.5 + max(0.0, exceed) / 30.0)
-                    quantity = max(1, int(total_quantity * sell_ratio))
-                    suggestion['description'] = (
-                        f"익절 신호 - {quantity}주 매도 추천 "
-                        f"(수익률: {current_returns:.1f}%, 매도비율: {sell_ratio*100:.0f}%)"
-                    )
+                if exit_strategy and exit_strategy.get('action') in {'PARTIAL_SELL', 'FULL_SELL'}:
+                    quantity = min(total_quantity, max(0, exit_strategy.get('quantity', 0)))
+                    suggestion['description'] = exit_strategy.get('description', '')
+                    metrics = exit_strategy.get('metrics', {})
+                    suggestion['current_returns'] = round(metrics.get('price_return_pct', current_returns), 2)
+                    suggestion['total_return_with_dividend'] = round(metrics.get('total_return_pct', current_returns), 2)
+                    suggestion['realized_dividends'] = round(metrics.get('realized_dividends', 0.0), 2)
                 elif current_returns <= stop_loss:
                     quantity = total_quantity
                     sl_str = f"{stop_loss:.2f}%" + (" (배당금 반영)" if is_dynamic else "")
@@ -422,11 +605,26 @@ class TradingSignalGenerator:
 
         else:  # HOLD
             if current_holding and current_holding['total_quantity'] > 0:
+                position_metrics = self.calculate_position_metrics(symbol, current_holding, current_price)
                 total_quantity = current_holding['total_quantity']
-                avg_price = current_holding['total_invested'] / total_quantity
-                current_returns = ((current_price - avg_price) / avg_price) * 100
-                suggestion['description'] = f"보유 신호 - ({total_quantity}주 보유, 수익률: {current_returns:.1f}%)"
-                suggestion['current_returns'] = round(current_returns, 2)
+                if exit_strategy and exit_strategy.get('action') in {'PARTIAL_SELL', 'FULL_SELL'}:
+                    suggestion['signal'] = 'SELL'
+                    suggestion['quantity'] = min(total_quantity, max(0, exit_strategy.get('quantity', 0)))
+                    suggestion['total_investment'] = round(suggestion['quantity'] * current_price, 2)
+                    suggestion['description'] = exit_strategy.get('description', '')
+                    metrics = exit_strategy.get('metrics', {})
+                    suggestion['current_returns'] = round(metrics.get('price_return_pct', 0.0), 2)
+                    suggestion['total_return_with_dividend'] = round(metrics.get('total_return_pct', 0.0), 2)
+                    suggestion['realized_dividends'] = round(metrics.get('realized_dividends', 0.0), 2)
+                else:
+                    current_returns = position_metrics['price_return_pct'] if position_metrics else 0.0
+                    total_returns = position_metrics['total_return_pct'] if position_metrics else current_returns
+                    suggestion['description'] = (
+                        f"보유 신호 - ({total_quantity}주 보유, 가격수익률: {current_returns:.1f}%, "
+                        f"배당포함 총수익률: {total_returns:.1f}%)"
+                    )
+                    suggestion['current_returns'] = round(current_returns, 2)
+                    suggestion['total_return_with_dividend'] = round(total_returns, 2)
             else:
                 suggestion['description'] = "신호 없음"
 
@@ -501,6 +699,3 @@ class TradingSignalGenerator:
             stop_losses[symbol] = self.calculate_dynamic_stop_loss(symbol, asset)
         
         return stop_losses
-
-
-

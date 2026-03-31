@@ -74,13 +74,37 @@ class ETFAutoTrader:
                 signal['dynamic_stop_loss'] = dynamic_stop_loss
 
                 current_price = signal['current_price']
+                exit_strategy = self.signal_generator.evaluate_exit_strategy(
+                    symbol,
+                    etf_asset,
+                    current_price,
+                    signal['signal'],
+                    dynamic_stop_loss,
+                    self.portfolio.get_completed_take_profit_levels(symbol),
+                )
                 trade_suggestion = self.signal_generator.calculate_trade_suggestion(
                     signal,
                     portfolio_summary,
                     current_price,
+                    exit_strategy=exit_strategy,
                 )
 
-                if signal['signal'] == 'BUY':
+                if trade_suggestion['signal'] == 'SELL' and trade_suggestion['quantity'] > 0:
+                    signal['signal'] = 'SELL'
+                    logger.info(f"Exit rule triggered: {etf_name}")
+                    sell_qty = trade_suggestion['quantity']
+                    sold_qty = self.portfolio.sell_asset_quantity(symbol, sell_qty)
+                    if sold_qty > 0:
+                        total_proceeds = sold_qty * current_price
+                        self.portfolio.add_cash(total_proceeds, f"{symbol} sell {sold_qty} shares")
+                        if exit_strategy and exit_strategy.get('action') == 'PARTIAL_SELL':
+                            level_id = exit_strategy.get('level_id')
+                            if level_id:
+                                self.portfolio.mark_take_profit_level_completed(symbol, level_id)
+                        logger.info(f"Filled SELL: {symbol} {sold_qty} @ ${current_price:.2f} (cash +${total_proceeds:,.2f})")
+                    self.notifier.send_all_notifications(signal, trade_suggestion)
+
+                elif signal['signal'] == 'BUY':
                     logger.info(f"BUY signal: {etf_name}")
                     if trade_suggestion['quantity'] > 0:
                         buy_qty = trade_suggestion['quantity']
@@ -353,6 +377,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

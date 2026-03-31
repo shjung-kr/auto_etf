@@ -26,11 +26,34 @@ class PortfolioManager:
         if os.path.exists(PORTFOLIO_FILE):
             try:
                 with open(PORTFOLIO_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    portfolio = json.load(f)
+                    return self._normalize_portfolio(portfolio)
             except Exception as e:
                 logger.error(f"포트폴리오 로드 실패: {str(e)}")
                 return {}
         return {}
+
+    def _normalize_portfolio(self, portfolio):
+        """기존 포트폴리오 데이터에 메타데이터 기본값을 보강"""
+        for symbol, data in portfolio.items():
+            if symbol == "CASH":
+                continue
+
+            if "holdings" not in data or not isinstance(data["holdings"], list):
+                data["holdings"] = []
+
+            trade_state = data.get("trade_state")
+            if not isinstance(trade_state, dict):
+                trade_state = {}
+
+            completed_levels = trade_state.get("completed_take_profit_levels")
+            if not isinstance(completed_levels, list):
+                completed_levels = []
+
+            trade_state["completed_take_profit_levels"] = completed_levels
+            data["trade_state"] = trade_state
+
+        return portfolio
     
     def save_portfolio(self):
         """포트폴리오 저장"""
@@ -61,7 +84,14 @@ class PortfolioManager:
         if symbol not in self.portfolio:
             self.portfolio[symbol] = {
                 "name": name,
-                "holdings": []
+                "holdings": [],
+                "trade_state": {
+                    "completed_take_profit_levels": []
+                }
+            }
+        elif "trade_state" not in self.portfolio[symbol]:
+            self.portfolio[symbol]["trade_state"] = {
+                "completed_take_profit_levels": []
             }
         
         holding = {
@@ -186,6 +216,43 @@ class PortfolioManager:
         self.save_portfolio()
         logger.info(f"자산 매도 처리: {symbol} {sold_qty}주")
         return sold_qty
+
+    def get_completed_take_profit_levels(self, symbol):
+        """이미 실행된 부분 익절 단계 목록 반환"""
+        if symbol not in self.portfolio:
+            return []
+
+        trade_state = self.portfolio[symbol].get("trade_state", {})
+        levels = trade_state.get("completed_take_profit_levels", [])
+        if not isinstance(levels, list):
+            return []
+        return levels
+
+    def mark_take_profit_level_completed(self, symbol, level_id):
+        """부분 익절 단계를 완료 상태로 저장"""
+        if symbol not in self.portfolio:
+            return False
+
+        trade_state = self.portfolio[symbol].setdefault("trade_state", {})
+        completed_levels = trade_state.setdefault("completed_take_profit_levels", [])
+
+        if level_id not in completed_levels:
+            completed_levels.append(level_id)
+            self.save_portfolio()
+            logger.info(f"익절 단계 기록: {symbol} {level_id}")
+
+        return True
+
+    def reset_take_profit_levels(self, symbol):
+        """종목의 부분 익절 이력 초기화"""
+        if symbol not in self.portfolio:
+            return False
+
+        trade_state = self.portfolio[symbol].setdefault("trade_state", {})
+        trade_state["completed_take_profit_levels"] = []
+        self.save_portfolio()
+        logger.info(f"익절 단계 초기화: {symbol}")
+        return True
     
     def add_cash(self, amount, description="초기 현금"):
         """
@@ -319,7 +386,8 @@ class PortfolioManager:
                     "name": data["name"],
                     "total_quantity": symbol_quantity,
                     "total_invested": symbol_total,
-                    "holdings": valid_holdings
+                    "holdings": valid_holdings,
+                    "trade_state": data.get("trade_state", {"completed_take_profit_levels": []}),
                 })
         
         return {
@@ -345,7 +413,8 @@ class PortfolioManager:
             "total_quantity": total_quantity,
             "total_invested": total_invested,
             "average_price": total_invested / total_quantity if total_quantity > 0 else 0,
-            "holdings": data["holdings"]
+            "holdings": data["holdings"],
+            "trade_state": data.get("trade_state", {"completed_take_profit_levels": []}),
         }
     
     def print_portfolio(self):

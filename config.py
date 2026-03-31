@@ -27,6 +27,47 @@ PROFIT_CONFIG = {
     "REBALANCE_DAYS": 30,
 }
 
+DEFAULT_PROFIT_RULE = {
+    "target_profit": 0.07,
+    "stop_loss": -0.04,
+    "partial_take_profits": [],
+    "include_dividend_in_return": True,
+    "min_hold_days": 5,
+}
+
+ETF_PROFIT_RULES = {
+    "QYLD": {
+        "target_profit": 0.05,
+        "stop_loss": -0.04,
+        "partial_take_profits": [
+            {"profit": 0.05, "sell_ratio": 0.30},
+            {"profit": 0.08, "sell_ratio": 0.30},
+        ],
+        "include_dividend_in_return": True,
+        "min_hold_days": 7,
+    },
+    "SCHD": {
+        "target_profit": 0.08,
+        "stop_loss": -0.05,
+        "partial_take_profits": [
+            {"profit": 0.08, "sell_ratio": 0.40},
+            {"profit": 0.12, "sell_ratio": 0.30},
+        ],
+        "include_dividend_in_return": True,
+        "min_hold_days": 14,
+    },
+    "SDTY": {
+        "target_profit": 0.06,
+        "stop_loss": -0.05,
+        "partial_take_profits": [
+            {"profit": 0.06, "sell_ratio": 0.30},
+            {"profit": 0.10, "sell_ratio": 0.30},
+        ],
+        "include_dividend_in_return": True,
+        "min_hold_days": 7,
+    },
+}
+
 TRADING_CONFIG = {
     "BUY_SIGNAL_STRENGTH": 2,
     "SELL_SIGNAL_STRENGTH": 2,

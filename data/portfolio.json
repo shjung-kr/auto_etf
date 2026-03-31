@@ -1,6 +1,9 @@
 {
   "QYLD": {
     "name": "글로벌엑스 나스닥100 커버드콜",
+    "trade_state": {
+      "completed_take_profit_levels": []
+    },
     "holdings": [
       {
         "quantity": 0,
@@ -20,6 +23,9 @@
   },
   "SCHD": {
     "name": "슈왑 미국 배당주",
+    "trade_state": {
+      "completed_take_profit_levels": []
+    },
     "holdings": [
       {
         "quantity": 0,
@@ -39,6 +45,9 @@
   },
   "SDTY": {
     "name": "일드맥스 S&P500 커버드콜",
+    "trade_state": {
+      "completed_take_profit_levels": []
+    },
     "holdings": [
       {
         "quantity": 0,
