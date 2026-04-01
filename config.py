@@ -6,8 +6,7 @@ load_dotenv()
 ETF_LIST = {
     "Global X Nasdaq 100 Covered Call": "QYLD",
     "Schwab US Dividend Equity": "SCHD",
-    "YieldMax S&P 500 Covered Call": "SDTY",
-}
+    }
 
 ANALYSIS_CONFIG = {
     "MA_SHORT": 20,

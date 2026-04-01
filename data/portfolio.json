@@ -1,20 +1,13 @@
 {
   "QYLD": {
-    "name": "글로벌엑스 나스닥100 커버드콜",
+    "name": "글로벌엑스 나스닥100 커브드콜",
     "holdings": [
       {
-        "quantity": 0,
-        "purchase_price": 0.0,
-        "purchase_date": "2024-01-15",
-        "total_invested": 0.0,
-        "added_date": "2024-01-15 10:30:00"
-      },
-      {
-        "quantity": 235,
-        "purchase_price": 17.71,
-        "purchase_date": "2026-03-04",
-        "total_invested": 4161.85,
-        "added_date": "2026-03-04 12:03:37"
+        "quantity": 241,
+        "purchase_price": 17.7,
+        "purchase_date": "20250201",
+        "total_invested": 4265.7,
+        "added_date": "2026-04-01 10:36:46"
       }
     ]
   },
@@ -22,11 +15,18 @@
     "name": "슈왑 미국 배당주",
     "holdings": [
       {
-        "quantity": 34,
-        "purchase_price": 27.58,
-        "purchase_date": "2026-03-04",
-        "total_invested": 937.7199999999999,
-        "added_date": "2026-03-04 12:04:14"
+        "quantity": 208,
+        "purchase_price": 27.59,
+        "purchase_date": "2025-02-01",
+        "total_invested": 5738.72,
+        "added_date": "2026-04-01 10:51:54"
+      },
+      {
+        "quantity": 39,
+        "purchase_price": 30.68000030517578,
+        "purchase_date": "2026-04-01",
+        "total_invested": 1196.5200119018555,
+        "added_date": "2026-04-01 10:54:45"
       }
     ]
   },
@@ -34,76 +34,20 @@
     "name": "현금 (현재)",
     "holdings": [
       {
-        "quantity": 1240.95,
+        "quantity": 11660.28,
         "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 1240.95,
-        "description": "현금",
-        "added_date": "2026-03-04 12:22:49"
+        "purchase_date": "2026-04-01",
+        "total_invested": 11660.28,
+        "description": "초기 자금",
+        "added_date": "2026-04-01 10:54:04"
       },
       {
-        "quantity": 180.20999999999998,
+        "quantity": -1196.5200119018555,
         "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 180.20999999999998,
-        "description": "초기 현금",
-        "added_date": "2026-03-04 14:11:10"
-      },
-      {
-        "quantity": 180.20999999999998,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 180.20999999999998,
-        "description": "초기 현금",
-        "added_date": "2026-03-04 14:11:19"
-      },
-      {
-        "quantity": 47.98,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 47.98,
-        "description": "초기 현금",
-        "added_date": "2026-03-04 14:11:43"
-      },
-      {
-        "quantity": 19.26,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 19.26,
-        "description": "초기 현금",
-        "added_date": "2026-03-04 14:11:46"
-      },
-      {
-        "quantity": 108.54,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-04",
-        "total_invested": 108.54,
-        "description": "초기 현금",
-        "added_date": "2026-03-04 14:11:49"
-      },
-      {
-        "quantity": 3809.999942779541,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-31",
-        "total_invested": 3809.999942779541,
-        "description": "SCHD sell 125 shares",
-        "added_date": "2026-03-31 20:02:37"
-      },
-      {
-        "quantity": 9233.028259277344,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-31",
-        "total_invested": 9233.028259277344,
-        "description": "SDTY sell 236 shares",
-        "added_date": "2026-03-31 20:02:38"
-      },
-      {
-        "quantity": 1523.9999771118164,
-        "purchase_price": 1.0,
-        "purchase_date": "2026-03-31",
-        "total_invested": 1523.9999771118164,
-        "description": "SCHD sell 50 shares",
-        "added_date": "2026-03-31 20:05:01"
+        "purchase_date": "2026-04-01",
+        "total_invested": -1196.5200119018555,
+        "description": "SCHD buy 39 shares",
+        "added_date": "2026-04-01 10:54:45"
       }
     ]
   }
